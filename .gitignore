@@ -218,3 +218,11 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Raw data (compressed versions are committed instead)
+data/*.csv
+
+# Python
+.venv/
+__pycache__/
+.pytest_cache/
