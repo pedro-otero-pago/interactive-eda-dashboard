@@ -226,3 +226,6 @@ data/*.csv
 .venv/
 __pycache__/
 .pytest_cache/
+
+# Scratch exploration script
+src/explore.py
