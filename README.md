@@ -4,10 +4,13 @@
   energy demand, generation and weather", CC0), stored gzip-compressed
   (`.csv.gz`) so the repository stays small and nothing has to be
   downloaded to run the project.
-- `data_processing.py` — loads the energy dataset and cleans it:
-  converts the timestamps to a UTC datetime index, drops columns that
-  are empty or constant, and fills the few missing hours with time-based
-  interpolation.
+- `data_processing.py` — loads and cleans both datasets.
+  `load_energy` converts the timestamps to a UTC datetime index, drops
+  columns that are empty or constant, and fills the few missing hours
+  with time-based interpolation. `load_weather` removes duplicated
+  hour-city rows, strips the city names, converts temperatures from
+  Kelvin to Celsius, turns impossible values into gaps and interpolates
+  them per city, and drops the unreliable pressure column.
 
 ## Running tests
 

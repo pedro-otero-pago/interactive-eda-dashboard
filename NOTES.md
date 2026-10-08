@@ -76,3 +76,55 @@ with a gap between 20 and 40 and a column that is always 0, and checks
 that the gap is interpolated to 30 and that the constant column is
 dropped. Unlike the others, it tests the logic itself and doesn't
 depend on the real file.
+
+## Loading and cleaning the weather data
+
+I explored weather_features.csv.gz with the same throwaway script as the
+energy file. It has 178,396 rows for five cities (Madrid, Barcelona,
+Valencia, Seville and Bilbao), in long format: one row per hour and
+city, not one row per hour. Each city should have the same 35,064 hours
+as the energy file, but the counts were higher, and the excess added up
+to exactly 3,076, which matched the number of duplicated hour-city pairs.
+
+Looking at the duplicates, all the numeric columns were identical; the
+only difference was the weather description (for example "light rain"
+and "drizzle", or "rain" and "thunderstorm" for the same hour), which
+are two simultaneous conditions rather than two measurements. I keep
+the first copy, and since I don't use the text columns, nothing useful
+is lost. After this each city has exactly 35,064 hours, with no gaps.
+
+Two smaller problems: Barcelona appeared as " Barcelona" with a leading
+space, which would have broken any filter by city name, so I strip the
+names. And temperatures are stored in Kelvin, so I subtract 273.15 to
+work in Celsius (the result goes from -10.9 to 42.5, which is plausible
+for Spain).
+
+The weather file has no missing values, but it has impossible ones,
+which are worse because nothing flags them: pressure up to 1,008,371
+hPa and as low as 0, 63 rows with a humidity of exactly 0, and wind
+speeds up to 133 m/s. Humidity and wind only have a handful of bad
+rows (63 and 4 out of 178,396), so I turn them into NaN and interpolate
+them per city, grouping by city_name so that the weather of Madrid is
+never mixed with that of Bilbao. Treating a humidity of exactly 0 as a
+gap is a judgement call: it almost never happens in these cities and it
+is usually a filler value.
+
+I first handled pressure the same way, with an accepted range of
+900-1100 hPa, but that range was picked without looking at the
+distribution, and after cleaning the maximum was still 1,090 hPa.
+Looking at the extremes, 367 rows were above 1050 and 2,311 below 960,
+and they come in runs of consecutive hours with the same value (for
+example seven hours in a row at 1086-1087 hPa in August 2016, a
+pressure that has never been recorded in Spain), which looks like a
+stuck sensor rather than isolated glitches. Cutting those would leave
+long gaps, and interpolating across long gaps means inventing data, so I
+dropped the pressure column entirely. It is also the variable least
+related to the electricity system.
+
+The columns kept are temp, humidity, wind_speed, wind_deg, rain_1h and
+clouds_all. I dropped temp_min and temp_max (redundant with temp), the
+four text columns describing the weather, and rain_3h and snow_3h
+(almost always 0). The result stays in long format with city_name as a
+column and the UTC time as the index, since that is what a city
+selector in the dashboard needs. Combining it with the energy data is
+a separate step.
