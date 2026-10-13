@@ -37,3 +37,12 @@ def load_weather(path):
     )
 
     return df.set_index("time")
+
+def combine_datasets(energy, weather):
+    weather_cols = ["temp", "humidity", "wind_speed", "rain_1h", "clouds_all"]
+
+    national_weather = (
+        weather.groupby(level="time")[weather_cols].mean().add_prefix("avg_")
+    )
+
+    return energy.join(national_weather, how="inner")
