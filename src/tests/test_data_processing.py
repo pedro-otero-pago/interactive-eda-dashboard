@@ -2,7 +2,7 @@ import os
 
 import pandas as pd
 import pytest
-from data_processing import load_energy, load_weather
+from data_processing import combine_datasets, load_energy, load_weather
 
 DATA_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "data", "energy_dataset.csv.gz")
 WEATHER_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "data", "weather_features.csv.gz")
@@ -107,3 +107,33 @@ def test_load_weather_cleans_small_file(tmp_path):
     assert result["temp"].iloc[0] == pytest.approx(10.0)
     assert result["humidity"].iloc[2] == pytest.approx(70.0)
     assert "pressure" not in result.columns
+
+def test_combine_shape(df, weather):
+    combined = combine_datasets(df, weather)
+    assert combined.shape == (35064, 25)
+
+
+def test_combine_has_no_missing_values(df, weather):
+    combined = combine_datasets(df, weather)
+    assert combined.isna().sum().sum() == 0
+
+
+def test_combine_averages_the_cities_for_each_hour():
+    index = pd.date_range("2015-01-01", periods=2, freq="h", tz="UTC", name="time")
+    energy = pd.DataFrame({"load": [1.0, 2.0]}, index=index)
+    weather = pd.DataFrame(
+        {
+            "city_name": ["Madrid", "Bilbao", "Madrid", "Bilbao"],
+            "temp": [10.0, 20.0, 30.0, 40.0],
+            "humidity": [50, 70, 60, 80],
+            "wind_speed": [1, 3, 2, 4],
+            "rain_1h": [0.0, 0.0, 0.0, 0.0],
+            "clouds_all": [0, 20, 40, 60],
+        },
+        index=index.repeat(2),
+    )
+
+    result = combine_datasets(energy, weather)
+
+    assert result["avg_temp"].tolist() == [15.0, 35.0]
+    assert result["avg_clouds_all"].tolist() == [10.0, 50.0]
