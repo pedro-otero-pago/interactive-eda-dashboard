@@ -128,3 +128,38 @@ four text columns describing the weather, and rain_3h and snow_3h
 column and the UTC time as the index, since that is what a city
 selector in the dashboard needs. Combining it with the energy data is
 a separate step.
+
+## Combining energy and weather data
+
+Energy and weather live in two different shapes: energy has one row
+per hour for the whole country, while weather has one row per hour
+and per city (five cities, 175,320 rows). To study how the weather
+affects demand and prices I need them in a single table with one row
+per hour, so combine_datasets reduces the weather to one row per hour
+and joins it to the energy data.
+
+The reduction is a simple mean of the five cities for each hour,
+using groupby(level="time"). The columns get an avg_ prefix (avg_temp,
+avg_humidity, avg_wind_speed, avg_rain_1h, avg_clouds_all) so it is
+always clear that they are national averages and not a single
+station. The join is done on the UTC time index with how="inner", so
+only hours present in both datasets survive. Both files cover exactly
+the same 35,064 hours, so nothing is lost and the final shape is
+(35064, 25): the 20 energy columns plus the 5 weather ones.
+
+I left wind_deg out on purpose. Wind direction is an angle, and the
+mean of 350 and 10 degrees is 180, when the real average direction
+is 0. A plain mean of angles is simply wrong, and doing it properly
+(averaging the sine and cosine components) would add complexity for
+a column I do not need to explain demand.
+
+The mean is not weighted. Madrid or Barcelona count exactly the same
+as Bilbao, even though they have far more population and electricity
+demand. Weighting each city by its population would give a more
+realistic national temperature. I decided to leave it as a future
+improvement and to come back to it before closing the project.
+
+The tests check the shape (35064, 25), that there are no missing
+values after the join, and, with a small hand-made example of two
+hours and two cities, that the averages come out right (10 and 20
+give 15, 30 and 40 give 35).
