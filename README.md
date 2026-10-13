@@ -5,12 +5,9 @@
   (`.csv.gz`) so the repository stays small and nothing has to be
   downloaded to run the project.
 - `data_processing.py` — loads and cleans both datasets.
-  `load_energy` converts the timestamps to a UTC datetime index, drops
-  columns that are empty or constant, and fills the few missing hours
-  with time-based interpolation. 
-  `load_weather` removes duplicated hour-city rows, strips the city names, converts temperatures from Kelvin to Celsius, turns impossible values into gaps and interpolates them per city, and drops the unreliable pressure column.
-  `combine_datasets` merges both sources into one hourly table, using
-  the mean of the five cities as national weather.
+  - `load_energy` converts the timestamps to a UTC datetime index, drops columns that are empty or constant, and fills the few missing hours with time-based interpolation. 
+  - `load_weather` removes duplicated hour-city rows, strips the city names, converts temperatures from Kelvin to Celsius, turns impossible values into gaps and interpolates them per city, and drops the unreliable pressure column.
+  - `combine_datasets` merges both sources into one hourly table, using the mean of the five cities as national weather.
 
 ## Running tests
 
