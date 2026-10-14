@@ -163,3 +163,46 @@ The tests check the shape (35064, 25), that there are no missing
 values after the join, and, with a small hand-made example of two
 hours and two cities, that the averages come out right (10 and 20
 give 15, 30 and 40 give 35).
+
+## Exploring the data and two more cleaning rules
+
+Before building any chart I explored the combined table with a
+throwaway script, to see what the data looks like and to catch
+anything suspicious. The general patterns came out as expected:
+demand has a valley at 4am and two peaks, around 1pm and 9pm,
+weekends are about 10% lower than weekdays, and over the year it
+peaks in January and July. The official day-ahead load forecast is
+off by 317 MW on average, around 1.1% of the demand. But the check
+for strange values found two problems I had not seen before.
+
+The first one is nuclear generation. It has three hours at exactly
+0 in November 2017, with a mean of 6,263 MW the rest of the time.
+Spain's whole nuclear fleet does not drop to zero for one hour and
+come back, so I treat them as sensor failures: load_energy turns
+them into missing values and the existing interpolation fills them.
+They are isolated single hours, so interpolating is safe.
+
+The second one is a 44-hour block between 18 and 20 July 2016 where
+temperature, humidity and wind speed do not change at all in the
+five cities at the same time. That cannot be real weather. It looks
+like the data provider stopped updating and kept repeating the last
+value. My first idea was to look only for repeated humidity, but
+that would have been wrong: Barcelona has several blocks of 100%
+humidity lasting days, and in those the temperature keeps changing,
+so it is just fog and rain saturating the sensor. The rule that
+works is to look at the three columns together: if temperature,
+humidity and wind speed are all identical to the previous hour for
+24 hours or more in a row, I consider the readings frozen. Those
+rows become missing values and get interpolated, keeping the first
+hour of the block because it is a real reading. Wind speed alone
+repeats a lot in normal data because it comes in nearly whole
+numbers, which is another reason not to look at one column.
+
+Interpolating 44 hours is a compromise, since a straight line
+loses the day and night cycle of the temperature. It affects 0.13%
+of the rows, and I prefer that to trusting readings I know are
+false. The tests check both rules with small files: a nuclear zero
+between 6000 and 6200 becomes 6100, and a frozen day and a half of
+weather turns into a ramp from 14 to 24 degrees. My first version
+broke an older test because the small file had no nuclear column,
+so the nuclear rule now only runs when the column exists.
