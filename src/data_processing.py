@@ -9,9 +9,23 @@ def load_energy(path):
 
     df = df.loc[:, df.nunique() > 1]
 
+    if "generation nuclear" in df.columns:
+        df["generation nuclear"] = df["generation nuclear"].where(
+            df["generation nuclear"] > 0
+        )
+
     df = df.interpolate(method="time")
 
     return df
+
+def _mask_frozen_readings(df, min_hours=24):
+    readings = df[["temp", "humidity", "wind_speed"]]
+    previous = readings.groupby(df["city_name"]).shift()
+    repeated = readings.eq(previous).all(axis=1)
+
+    run_id = (~repeated).cumsum()
+    run_length = repeated.groupby(run_id).transform("sum")
+    return repeated & (run_length >= min_hours)
 
 def load_weather(path):
     df = pd.read_csv(path)
@@ -32,6 +46,8 @@ def load_weather(path):
     df["wind_speed"] = df["wind_speed"].where(df["wind_speed"] <= 40)
 
     df = df.sort_values(["city_name", "time"])
+    frozen = _mask_frozen_readings(df)
+    df[cols] = df[cols].mask(frozen, axis=0)
     df[cols] = df.groupby("city_name")[cols].transform(
         lambda s: s.interpolate(limit_direction="both")
     )
