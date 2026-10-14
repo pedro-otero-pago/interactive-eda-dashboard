@@ -137,3 +137,43 @@ def test_combine_averages_the_cities_for_each_hour():
 
     assert result["avg_temp"].tolist() == [15.0, 35.0]
     assert result["avg_clouds_all"].tolist() == [10.0, 50.0]
+
+def test_load_energy_treats_nuclear_zero_as_missing(tmp_path):
+    path = tmp_path / "energy.csv"
+    pd.DataFrame(
+        {
+            "time": [
+                "2015-01-01 00:00:00+01:00",
+                "2015-01-01 01:00:00+01:00",
+                "2015-01-01 02:00:00+01:00",
+            ],
+            "generation nuclear": [6000, 0, 6200],
+        }
+    ).to_csv(path, index=False)
+
+    result = load_energy(path)
+
+    assert result["generation nuclear"].tolist() == [6000, 6100, 6200]
+
+
+def test_load_weather_replaces_frozen_readings(tmp_path):
+    hours = pd.date_range("2016-07-18", periods=41, freq="h", tz="UTC")
+    steady = [min(i, 4) for i in range(40)]
+
+    pd.DataFrame(
+        {
+            "dt_iso": hours.strftime("%Y-%m-%d %H:%M:%S+00:00"),
+            "city_name": "Madrid",
+            "temp": [283.15 + s for s in steady] + [297.15],
+            "humidity": [50 + s for s in steady] + [90],
+            "wind_speed": [1 + s for s in steady] + [10],
+            "wind_deg": 180,
+            "rain_1h": 0.0,
+            "clouds_all": 0,
+        }
+    ).to_csv(tmp_path / "weather.csv", index=False)
+
+    result = load_weather(tmp_path / "weather.csv")
+
+    assert result["temp"].nunique() == 41
+    assert result["temp"].iloc[22] == pytest.approx(19.0)
