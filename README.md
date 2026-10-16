@@ -10,6 +10,8 @@
   - `combine_datasets` merges both sources into one hourly table, using the mean of the five cities as national weather.
   - Cleaning also drops impossible nuclear zeros and weather readings
   frozen for 24 hours or more.
+- `src/analysis.py`: aggregation by hour/day/week/month in Madrid
+  time, average profiles, and forecast error metrics.
 
 ## Running tests
 

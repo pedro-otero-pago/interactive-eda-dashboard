@@ -206,3 +206,40 @@ between 6000 and 6200 becomes 6100, and a frozen day and a half of
 weather turns into a ramp from 14 to 24 degrees. My first version
 broke an older test because the small file had no nuclear column,
 so the nuclear rule now only runs when the column exists.
+
+## Analysis functions
+
+The dashboard needs a few calculations on top of the clean table:
+averages for different time scales, typical profiles, and how well
+the official forecast does. I put them in a separate module,
+analysis.py, instead of writing them inside the Streamlit code. That
+way they can be tested on their own, and the app only has to call
+them and draw the result.
+
+aggregate takes the hourly table and a granularity (hour, day, week
+or month) and returns the mean of every column for each period. I
+use the mean and not the sum because demand and generation are
+measured in MW, which is power: the mean of a day is the average
+power of that day, so the four granularities stay on the same scale
+and can be compared. Before grouping, the index is converted from
+UTC to Madrid time. If I grouped in UTC, a day would start at 1am or
+2am local time and would cut the night in half, which would distort
+the daily values.
+
+profile gives the average of a column by hour of the day, day of the
+week or month, again in Madrid time. It is the same calculation I did
+while exploring the data, now reusable for demand, price, solar or
+any other column.
+
+forecast_metrics compares the official load forecast with the real
+demand and returns three numbers: the mean error, to see if it is
+biased in one direction, the MAE in MW, and the MAPE as a
+percentage, which is the easiest one to show in a KPI card.
+
+The tests use small tables built by hand so the right answer can be
+worked out on paper. The daily and hourly tests start at 23:00 UTC,
+which is midnight in Madrid in winter, so every block of 24 rows is
+one full local day. 4 January 2016 was a Monday, which checks that
+the weekly profile starts on day 0. For the forecast, errors of +10
+and -10 on loads of 100 and 200 must give a bias of 0, an MAE of 10
+and a MAPE of 7.5%.
