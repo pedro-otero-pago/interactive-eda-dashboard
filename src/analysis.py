@@ -9,6 +9,12 @@ def aggregate(df, granularity):
     return local.resample(FREQUENCIES[granularity]).mean()
 
 
+def filter_dates(df, start, end):
+    local = df.tz_convert(LOCAL_TZ)
+    mask = (local.index.date >= start) & (local.index.date <= end)
+    return local[mask]
+
+
 def profile(df, column, by):
     local = df.index.tz_convert(LOCAL_TZ)
     keys = {"hour": local.hour, "weekday": local.weekday, "month": local.month}
