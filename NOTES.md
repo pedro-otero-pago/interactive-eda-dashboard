@@ -243,3 +243,32 @@ one full local day. 4 January 2016 was a Monday, which checks that
 the weekly profile starts on day 0. For the forecast, errors of +10
 and -10 on loads of 100 and 200 must give a bias of 0, an MAE of 10
 and a MAPE of 7.5%.
+
+## Dashboard skeleton and filters
+
+The dashboard is a Streamlit app in src/app.py. Streamlit runs the
+whole script again every time the user touches a control, so the
+first thing I had to solve was not reloading the data on every
+click. Reading and cleaning both files takes several seconds,
+mostly the weather one with its 175,000 rows. I wrapped the loading
+in a function with the st.cache_data decorator, so it runs once and
+every later call returns the stored result. After the first load,
+changing a filter is instant. The paths to the data files are built
+from the location of app.py itself, the same trick I use in the
+tests, so the app starts from any folder.
+
+The sidebar has two filters: a date range and a granularity (hour,
+day, week or month). The date range needed one extra check. While
+the user is picking dates, after clicking the first one and before
+the second, Streamlit returns a tuple with only one date, and
+unpacking it would crash the app. If the range is incomplete the app
+shows a short message and stops there with st.stop.
+
+The filtering itself is in analysis.py as filter_dates, not inside
+the app, so that it can be tested. It works in Madrid time, like
+aggregate, so a selected day is always a full local day. The order
+matters: the app first filters the dates and then aggregates, so
+only the requested rows are grouped. With the full range, day gives
+1,461 rows and month gives 48. The test builds three local days of
+hourly data, asks for the middle one, and checks that it gets 24
+rows starting at midnight with the right first value.
