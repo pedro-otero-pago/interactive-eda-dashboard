@@ -1,7 +1,9 @@
+import datetime
+
 import pandas as pd
 import pytest
 
-from analysis import aggregate, forecast_metrics, profile
+from analysis import aggregate, filter_dates, forecast_metrics, profile
 
 
 def test_aggregate_uses_local_days():
@@ -53,3 +55,16 @@ def test_forecast_metrics():
     assert result["mean_error"] == pytest.approx(0.0)
     assert result["mae"] == pytest.approx(10.0)
     assert result["mape"] == pytest.approx(7.5)
+
+
+def test_filter_dates_keeps_whole_local_days():
+    index = pd.date_range(
+        "2015-12-31 23:00", periods=72, freq="h", tz="UTC", name="time"
+    )
+    df = pd.DataFrame({"load": range(72)}, index=index)
+
+    result = filter_dates(df, datetime.date(2016, 1, 2), datetime.date(2016, 1, 2))
+
+    assert len(result) == 24
+    assert result.index[0].hour == 0
+    assert result["load"].iloc[0] == 24
