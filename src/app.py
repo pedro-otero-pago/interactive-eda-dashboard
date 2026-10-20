@@ -1,8 +1,9 @@
 import os
 
+import plotly.express as px
 import streamlit as st
 
-from analysis import LOCAL_TZ, aggregate, filter_dates
+from analysis import LOCAL_TZ, aggregate, filter_dates, forecast_metrics
 from data_processing import combine_datasets, load_energy, load_weather
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data")
@@ -40,7 +41,23 @@ if len(date_range) != 2:
     st.stop()
 
 start, end = date_range
-data = aggregate(filter_dates(df, start, end), granularity)
+hourly = filter_dates(df, start, end)
+data = aggregate(hourly, granularity)
+errors = forecast_metrics(hourly)
 
-st.write(f"{len(data):,} rows ({granularity}) from {start} to {end}")
-st.dataframe(data.head(100))
+col1, col2, col3, col4 = st.columns(4)
+col1.metric("Average demand", f"{hourly['total load actual'].mean():,.0f} MW")
+col2.metric("Average price", f"{hourly['price actual'].mean():.1f} €/MWh")
+col3.metric("Forecast error (MAPE)", f"{errors['mape']:.2f} %")
+col4.metric("Average temperature", f"{hourly['avg_temp'].mean():.1f} °C")
+
+fig = px.line(
+    data,
+    y="total load actual",
+    title=f"Electricity demand ({granularity} average)",
+    labels={"total load actual": "Demand (MW)", "time": "Date"},
+)
+st.plotly_chart(fig)
+
+with st.expander("Show data"):
+    st.dataframe(data)
