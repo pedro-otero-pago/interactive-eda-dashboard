@@ -19,8 +19,9 @@
 - `src/analysis.py` — date filtering, aggregation by
   hour/day/week/month in Madrid time, average profiles, and forecast
   error metrics.
-- `src/app.py` — Streamlit app. Loads and caches the data and has
-  sidebar filters for the date range and the granularity.
+- `src/app.py` — Streamlit app. Loads and caches the data, has
+  sidebar filters for the date range and the granularity, and shows
+  KPI cards and an interactive demand chart.
 
 ## Running the dashboard
 

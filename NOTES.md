@@ -272,3 +272,36 @@ only the requested rows are grouped. With the full range, day gives
 1,461 rows and month gives 48. The test builds three local days of
 hourly data, asks for the middle one, and checks that it gets 24
 rows starting at midnight with the right first value.
+
+## KPI cards and demand chart
+
+The top of the dashboard now has four KPI cards, which are the key
+figures of the selected period: average demand, average price, the
+forecast error and the average temperature. Under them there is a
+first line chart of the demand, made with Plotly Express. A KPI is
+just a summary number, the thing you want to see at a glance before
+going into the detail of any chart.
+
+One design decision here is that the cards are calculated from the
+hourly data of the selected dates, not from the data already grouped
+by granularity. If they came from the grouped table, the average
+demand could change slightly when switching from hour to month,
+because of incomplete periods at the edges of the range. This way
+the four cards depend only on the date range, and the granularity
+only changes the chart. With the full range the app shows 28,698 MW
+of average demand, 57.9 euros per MWh, a forecast error of 1.10% and
+16.6 degrees of average temperature, which match the numbers I got
+while exploring the data.
+
+The chart is interactive without extra code: hovering shows the
+exact value, dragging zooms in and a double click resets it. The
+daily view looks very jagged because the demand goes up and down
+every week, with high weekdays and low weekends, and that rhythm
+hides the yearly trend. Switching to weekly or monthly makes the
+U shape of the year visible, with peaks in winter and summer. The
+table behind the chart is in a collapsed section so it can be
+checked without filling the screen.
+
+This piece has no new tests. It only calls Streamlit and Plotly, and
+the calculations behind the numbers, filter_dates, aggregate and
+forecast_metrics, are already covered by their own tests.
