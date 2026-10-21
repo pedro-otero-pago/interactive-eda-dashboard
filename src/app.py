@@ -3,10 +3,12 @@ import os
 import plotly.express as px
 import streamlit as st
 
-from analysis import LOCAL_TZ, aggregate, filter_dates, forecast_metrics
+from analysis import LOCAL_TZ, aggregate, filter_dates, forecast_metrics, profile
 from data_processing import combine_datasets, load_energy, load_weather
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data")
+DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+VARIABLES = {"Demand (MW)": "total load actual", "Price (€/MWh)": "price actual"}
 
 
 @st.cache_data
@@ -51,13 +53,41 @@ col2.metric("Average price", f"{hourly['price actual'].mean():.1f} €/MWh")
 col3.metric("Forecast error (MAPE)", f"{errors['mape']:.2f} %")
 col4.metric("Average temperature", f"{hourly['avg_temp'].mean():.1f} °C")
 
-fig = px.line(
-    data,
-    y="total load actual",
-    title=f"Electricity demand ({granularity} average)",
-    labels={"total load actual": "Demand (MW)", "time": "Date"},
-)
-st.plotly_chart(fig)
+overview_tab, patterns_tab = st.tabs(["Overview", "Patterns"])
 
-with st.expander("Show data"):
-    st.dataframe(data)
+with overview_tab:
+    fig = px.line(
+        data,
+        y="total load actual",
+        title=f"Electricity demand ({granularity} average)",
+        labels={"total load actual": "Demand (MW)", "time": "Date"},
+    )
+    st.plotly_chart(fig)
+
+    with st.expander("Show data"):
+        st.dataframe(data)
+
+with patterns_tab:
+    label = st.radio("Variable", list(VARIABLES), horizontal=True)
+    column = VARIABLES[label]
+
+    left, right = st.columns(2)
+
+    by_hour = profile(hourly, column, "hour")
+    fig_hour = px.line(
+        x=by_hour.index,
+        y=by_hour.values,
+        markers=True,
+        title="Average by hour of the day",
+        labels={"x": "Hour (Madrid time)", "y": label},
+    )
+    left.plotly_chart(fig_hour)
+
+    by_day = profile(hourly, column, "weekday")
+    fig_day = px.bar(
+        x=[DAYS[i] for i in by_day.index],
+        y=by_day.values,
+        title="Average by day of the week",
+        labels={"x": "Day", "y": label},
+    )
+    right.plotly_chart(fig_day)
