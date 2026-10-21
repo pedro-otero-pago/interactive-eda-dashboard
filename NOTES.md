@@ -305,3 +305,36 @@ checked without filling the screen.
 This piece has no new tests. It only calls Streamlit and Plotly, and
 the calculations behind the numbers, filter_dates, aggregate and
 forecast_metrics, are already covered by their own tests.
+
+## Patterns tab
+
+The dashboard now uses tabs. The chart I already had moved to an
+Overview tab, and a new Patterns tab shows the typical profile of the
+demand or the price by hour of the day and by day of the week. A
+radio button chooses the variable, and the dictionary that links the
+readable label with the real column name lets the same two charts
+work for both, because profile in analysis.py was written for any
+column from the start.
+
+The profiles are calculated from the hourly data of the selected
+dates, so they follow the date range but not the granularity. A
+profile by hour makes no sense on data already averaged by month. The
+hours are in Madrid time, as everywhere else in the app.
+
+With the full range the hourly profile shows what I saw while
+exploring: a valley at 4am with about 22.7 GW, and two peaks, one at
+1pm and another at 9pm, both around 32 GW. The price follows the same
+shape, from about 47 euros per MWh at 4am to about 65 at 8 and 9pm.
+By day of the week, Saturday and Sunday are around 10% below the
+weekdays. The price is also lower at the weekend, and my explanation
+is that with less demand the most expensive power plants are not
+needed, and the price in this market is set by the last plant that
+has to be switched on. I have not checked it in the data, so I
+consider it the most likely reason and not a proven one.
+
+One small detail: the weekday names are built from the index of the
+profile and not from a fixed list of seven days. If the user selects
+a very short range that does not include every day of the week, the
+profile has fewer than seven values and the chart would fail with a
+fixed list. This piece has no new tests, since the calculation
+itself is already covered by the profile tests.

@@ -20,8 +20,9 @@
   hour/day/week/month in Madrid time, average profiles, and forecast
   error metrics.
 - `src/app.py` — Streamlit app. Loads and caches the data, has
-  sidebar filters for the date range and the granularity, and shows
-  KPI cards and an interactive demand chart.
+  sidebar filters for the date range and the granularity, shows KPI
+  cards, and has tabs with an interactive demand chart and the
+  average profiles by hour and by day of the week.
 
 ## Running the dashboard
 
