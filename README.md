@@ -17,12 +17,13 @@
   - `combine_datasets` merges both sources into one hourly table,
     using the mean of the five cities as national weather.
 - `src/analysis.py` — date filtering, aggregation by
-  hour/day/week/month in Madrid time, average profiles, and forecast
-  error metrics.
+  hour/day/week/month in Madrid time, average profiles, binned
+  averages, and forecast error metrics.
 - `src/app.py` — Streamlit app. Loads and caches the data, has
   sidebar filters for the date range and the granularity, shows KPI
-  cards, and has tabs with an interactive demand chart and the
-  average profiles by hour and by day of the week.
+  cards, and has tabs with an interactive demand chart, the average
+  profiles by hour and by day of the week, and the relationship
+  between temperature and demand or price.
 
 ## Running the dashboard
 

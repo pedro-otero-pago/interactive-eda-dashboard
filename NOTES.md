@@ -338,3 +338,43 @@ a very short range that does not include every day of the week, the
 profile has fewer than seven values and the chart would fail with a
 fixed list. This piece has no new tests, since the calculation
 itself is already covered by the profile tests.
+
+## Weather tab
+
+The Weather tab compares the average temperature with the demand or
+the price, chosen with a radio button. Earlier I had seen that the
+linear correlation between temperature and demand was only 0.21, but
+I expected a real relationship in the shape of a U: heating makes the
+demand go up when it is cold, and air conditioning makes it go up
+when it is hot. A straight line cannot describe that, so the chart
+has to show the shape and not only one number.
+
+The chart uses daily averages and not the hourly data. Drawing
+35,000 points would be slow, and above all the demand changes a lot
+during the day, from 22 GW to 32 GW, which would blur the effect of
+the temperature. Averaging by day removes that daily cycle. Each day
+is a semi-transparent point, so the places where many days pile up
+are visible, and on top there is a line with the average demand for
+each 2 degree bin of temperature. For that line I added binned_mean
+to analysis.py, which rounds every temperature down to the start of
+its bin and averages the other column inside each bin. The test uses
+four values and two bins of width 10, so the right answer can be
+computed by hand. In the chart the points of the line are placed at
+the centre of each bin and not at its lower edge, otherwise the
+whole curve would look shifted half a bin to the left.
+
+The U shape is clear for the demand. The average goes down to about
+27,400 MW around 17 degrees and goes up to 30,000 MW or more with
+both cold and heat. The cloud of points is very wide, from 22,000
+to 35,000 MW at the same temperature, because the temperature is
+only one of the factors, and the day of the week and the season
+matter too. The bins at the extremes have few days, so the line is
+noisy there. The price shows a much weaker relationship, with a
+minimum of about 52 euros per MWh between 13 and 15 degrees and
+higher prices in the coldest days. I would not read much more into
+it, since the price depends more on gas and renewables.
+
+The temperature used here is the unweighted mean of the five
+cities, the improvement I left for the end of the project. The tab
+would be a good place to see its effect, since a population-weighted
+temperature should fit the demand a little better.
