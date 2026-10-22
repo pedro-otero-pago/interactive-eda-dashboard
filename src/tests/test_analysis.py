@@ -3,7 +3,7 @@ import datetime
 import pandas as pd
 import pytest
 
-from analysis import aggregate, filter_dates, forecast_metrics, profile
+from analysis import aggregate, binned_mean, filter_dates, forecast_metrics, profile
 
 
 def test_aggregate_uses_local_days():
@@ -68,3 +68,16 @@ def test_filter_dates_keeps_whole_local_days():
     assert len(result) == 24
     assert result.index[0].hour == 0
     assert result["load"].iloc[0] == 24
+
+
+def test_binned_mean_averages_inside_each_bin():
+    df = pd.DataFrame(
+        {
+            "temp": [1.0, 2.0, 11.0, 12.0],
+            "load": [10.0, 20.0, 30.0, 50.0],
+        }
+    )
+
+    result = binned_mean(df, "temp", "load", width=10)
+
+    assert result.to_dict() == {0.0: 15.0, 10.0: 40.0}
