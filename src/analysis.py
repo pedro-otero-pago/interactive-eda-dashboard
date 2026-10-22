@@ -28,3 +28,7 @@ def forecast_metrics(df):
         "mae": error.abs().mean(),
         "mape": (error.abs() / df["total load actual"]).mean() * 100,
     }
+
+def binned_mean(df, x, y, width):
+    bins = (df[x] // width) * width
+    return df[y].groupby(bins).mean()

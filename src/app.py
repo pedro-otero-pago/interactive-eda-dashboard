@@ -1,14 +1,16 @@
 import os
 
 import plotly.express as px
+import plotly.graph_objects as go
 import streamlit as st
 
-from analysis import LOCAL_TZ, aggregate, filter_dates, forecast_metrics, profile
+from analysis import LOCAL_TZ, aggregate, binned_mean, filter_dates, forecast_metrics, profile
 from data_processing import combine_datasets, load_energy, load_weather
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data")
 DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 VARIABLES = {"Demand (MW)": "total load actual", "Price (€/MWh)": "price actual"}
+BIN_WIDTH = 2
 
 
 @st.cache_data
@@ -53,7 +55,9 @@ col2.metric("Average price", f"{hourly['price actual'].mean():.1f} €/MWh")
 col3.metric("Forecast error (MAPE)", f"{errors['mape']:.2f} %")
 col4.metric("Average temperature", f"{hourly['avg_temp'].mean():.1f} °C")
 
-overview_tab, patterns_tab = st.tabs(["Overview", "Patterns"])
+overview_tab, patterns_tab, weather_tab = st.tabs(
+    ["Overview", "Patterns", "Weather"]
+)
 
 with overview_tab:
     fig = px.line(
@@ -91,3 +95,30 @@ with patterns_tab:
         labels={"x": "Day", "y": label},
     )
     right.plotly_chart(fig_day)
+
+with weather_tab:
+    weather_label = st.radio(
+        "Compare temperature with", list(VARIABLES), horizontal=True
+    )
+    weather_column = VARIABLES[weather_label]
+
+    daily = aggregate(hourly, "day")
+    curve = binned_mean(daily, "avg_temp", weather_column, BIN_WIDTH)
+
+    fig_weather = px.scatter(
+        daily,
+        x="avg_temp",
+        y=weather_column,
+        opacity=0.35,
+        title="Daily average temperature vs " + weather_label,
+        labels={"avg_temp": "Average temperature (°C)", weather_column: weather_label},
+    )
+    fig_weather.add_trace(
+        go.Scatter(
+            x=curve.index + BIN_WIDTH / 2,
+            y=curve.values,
+            mode="lines+markers",
+            name=f"Average per {BIN_WIDTH} °C",
+        )
+    )
+    st.plotly_chart(fig_weather)
