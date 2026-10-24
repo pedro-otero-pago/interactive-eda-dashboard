@@ -3,7 +3,16 @@ import datetime
 import pandas as pd
 import pytest
 
-from analysis import aggregate, binned_mean, filter_dates, forecast_metrics, profile
+from analysis import (
+    MIX_GROUPS,
+    aggregate,
+    binned_mean,
+    filter_dates,
+    forecast_errors,
+    forecast_metrics,
+    generation_mix,
+    profile,
+)
 
 
 def test_aggregate_uses_local_days():
@@ -81,3 +90,27 @@ def test_binned_mean_averages_inside_each_bin():
     result = binned_mean(df, "temp", "load", width=10)
 
     assert result.to_dict() == {0.0: 15.0, 10.0: 40.0}
+
+def test_forecast_errors_in_mw_and_percent():
+    df = pd.DataFrame(
+        {
+            "total load actual": [100.0, 200.0],
+            "total load forecast": [110.0, 190.0],
+        }
+    )
+
+    result = forecast_errors(df)
+
+    assert result["error"].tolist() == [10.0, -10.0]
+    assert result["abs_pct_error"].tolist() == [10.0, 5.0]
+
+def test_generation_mix_groups_every_source_once():
+    columns = [col for cols in MIX_GROUPS.values() for col in cols]
+    df = pd.DataFrame({col: [1.0, 2.0] for col in columns})
+
+    result = generation_mix(df)
+
+    assert list(result.columns) == list(MIX_GROUPS)
+    assert result["Coal"].tolist() == [2.0, 4.0]
+    assert result["Other"].tolist() == [5.0, 10.0]
+    assert result.sum(axis=1).tolist() == [13.0, 26.0]
