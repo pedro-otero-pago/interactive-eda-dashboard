@@ -4,7 +4,16 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 
-from analysis import LOCAL_TZ, aggregate, binned_mean, filter_dates, forecast_metrics, profile
+from analysis import (
+    LOCAL_TZ,
+    aggregate,
+    binned_mean,
+    filter_dates,
+    forecast_errors,
+    forecast_metrics,
+    generation_mix,
+    profile,
+)
 from data_processing import combine_datasets, load_energy, load_weather
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data")
@@ -55,8 +64,8 @@ col2.metric("Average price", f"{hourly['price actual'].mean():.1f} €/MWh")
 col3.metric("Forecast error (MAPE)", f"{errors['mape']:.2f} %")
 col4.metric("Average temperature", f"{hourly['avg_temp'].mean():.1f} °C")
 
-overview_tab, patterns_tab, weather_tab = st.tabs(
-    ["Overview", "Patterns", "Weather"]
+overview_tab, patterns_tab, weather_tab, generation_tab, forecast_tab = st.tabs(
+    ["Overview", "Patterns", "Weather", "Generation", "Forecast"]
 )
 
 with overview_tab:
@@ -122,3 +131,65 @@ with weather_tab:
         )
     )
     st.plotly_chart(fig_weather)
+
+with generation_tab:
+    fig_mix = px.area(
+        generation_mix(data),
+        title=f"Generation mix ({granularity} average)",
+        labels={"value": "Generation (MW)", "time": "Date", "variable": "Source"},
+    )
+    st.plotly_chart(fig_mix)
+
+    hourly_mix = generation_mix(hourly)
+    average_mix = hourly_mix.mean()
+    shares = (average_mix / average_mix.sum() * 100).sort_values(ascending=False)
+    gas_by_day = profile(hourly_mix, "Gas", "weekday")
+
+    left, right = st.columns(2)
+
+    fig_share = px.bar(
+        x=shares.index,
+        y=shares.values,
+        title="Share of total generation",
+        labels={"x": "Source", "y": "Share (%)"},
+    )
+    left.plotly_chart(fig_share)
+
+    fig_gas = px.bar(
+        x=[DAYS[i] for i in gas_by_day.index],
+        y=gas_by_day.values,
+        title="Average gas generation by day of the week",
+        labels={"x": "Day", "y": "Gas generation (MW)"},
+    )
+    right.plotly_chart(fig_gas)
+
+with forecast_tab:
+    fig_forecast = px.line(
+        data,
+        y=["total load actual", "total load forecast"],
+        title=f"Official forecast vs actual demand ({granularity} average)",
+        labels={"value": "Demand (MW)", "time": "Date", "variable": "Series"},
+    )
+    st.plotly_chart(fig_forecast)
+
+    hourly_errors = forecast_errors(hourly)
+    error_by_hour = profile(hourly_errors, "abs_pct_error", "hour")
+
+    left, right = st.columns(2)
+
+    fig_error = px.histogram(
+        hourly_errors,
+        x="error",
+        nbins=80,
+        title="Distribution of the hourly forecast error",
+        labels={"error": "Forecast minus actual (MW)"},
+    )
+    left.plotly_chart(fig_error)
+
+    fig_error_hour = px.bar(
+        x=error_by_hour.index,
+        y=error_by_hour.values,
+        title="Average absolute error by hour of the day",
+        labels={"x": "Hour (Madrid time)", "y": "Absolute error (%)"},
+    )
+    right.plotly_chart(fig_error_hour)
