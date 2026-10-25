@@ -24,6 +24,9 @@
   cards, and has five tabs: demand overview, average profiles by
   hour and weekday, temperature vs demand or price, generation mix,
   and the quality of the official demand forecast.
+- `src/features.py` — builds the table of input variables for the
+  price prediction model: past prices, forecasts published the day
+  before, and calendar values, with no information from the future.
 
 ## Running the dashboard
 

@@ -446,3 +446,50 @@ my own model to predict the price, the same idea applies, since the
 dataset also has the day-ahead price set by the market. That column
 will be the reference to beat, and the first thing to compare against
 will be simple rules like repeating the price of the day before.
+
+## Price prediction: the feature table
+
+The next goal is a model that predicts the price of electricity for
+each hour of a day, the day before. The most important decision is
+not the algorithm but which data the model is allowed to see. If it
+sees something that would not be known the day before, it will look
+excellent in my tests and be useless in practice. So the first piece
+is only the table of input variables, built in features.py, and a
+test that protects it.
+
+The model gets eight variables. Two are past prices: the price 24
+hours before and the price one week before, which carry the daily
+and weekly rhythm. Three are forecasts published the day before,
+for demand, solar and wind. The last three are calendar values: hour,
+day of the week and month, in Madrid time. The target is the real
+price of that hour. The lags are built by shifting the series by 24
+and 168 positions, which works because the data is hourly with no
+gaps. The first 168 hours have no previous week, so they are
+dropped, and the table has 34,896 rows. I am assuming that the
+prediction is made the day before, when the prices of the whole
+previous day are already known, which is a simplification of how the
+market really works.
+
+I left out several things on purpose. The day-ahead price column is
+the price that the market itself sets the day before for each hour,
+so using it as an input would be almost giving the model the answer.
+It is the reference I have to beat, not a variable. The real
+generation and the real demand of the same day are not known the day
+before either. The weather is a more subtle case: the dataset has
+the observed weather, not a forecast, so using the temperature of the
+same day would be like having a perfect weather forecast. I also saw
+in the weather tab that the price depends very little on the
+temperature, so I did not miss it. Public holidays would help, since
+the error of the official forecast on 1 May showed that they matter,
+but they need a calendar library, so I left them as a later
+improvement.
+
+The tests check that the lags are really 24 and 168 hours back, that
+the columns are the expected ones with no gaps, and that the real
+dataset gives a table of the right size. The one I care about most
+is the test for leaks. It changes the price of one hour to an absurd
+value and checks that every variable up to that hour stays exactly
+the same, so the price of an hour never leaks into its own variables
+or into earlier ones, and that 24 hours later the value does appear
+in the 24 hour lag, which proves that the information only travels
+forward in time.
