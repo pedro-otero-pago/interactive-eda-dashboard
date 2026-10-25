@@ -329,8 +329,8 @@ By day of the week, Saturday and Sunday are around 10% below the
 weekdays. The price is also lower at the weekend, and my explanation
 is that with less demand the most expensive power plants are not
 needed, and the price in this market is set by the last plant that
-has to be switched on. I have not checked it in the data, so I
-consider it the most likely reason and not a proven one.
+has to be switched on. I checked it later in the Generation tab, where
+gas generation is clearly lower at the weekend.
 
 One small detail: the weekday names are built from the index of the
 profile and not from a fixed list of seven days. If the user selects
@@ -378,3 +378,71 @@ The temperature used here is the unweighted mean of the five
 cities, the improvement I left for the end of the project. The tab
 would be a good place to see its effect, since a population-weighted
 temperature should fit the demand a little better.
+
+## Generation tab
+
+The dataset has 14 columns of generation, which is too many for a
+readable chart, and one of them is not generation at all:
+hydro pumped storage consumption is the electricity used to pump
+water uphill, so adding it would be wrong. I left it out and grouped
+the other 13 columns into 7 sources: nuclear, gas, coal, hydro, wind,
+solar and other. The grouping is a dictionary in analysis.py,
+MIX_GROUPS, and generation_mix sums the columns of each group. The
+test gives every column the value 1 and checks that coal, with two
+columns, gives 2, that other, with five, gives 5, and that the total
+is 13, so no source is lost or counted twice.
+
+The tab has three charts. A stacked area chart shows the mix over
+time with the granularity chosen in the sidebar, and a bar chart
+shows the share of each source in the selected dates. The third one
+is the average gas generation by day of the week, and I added it to
+check an explanation I had given for the lower price at the weekend:
+with less demand, the expensive power plants are not needed, and the
+price is set by the last plant that has to be switched on. The chart
+confirms it, since gas generation falls from about 5,900 MW on
+weekdays to about 4,800 MW on Sunday. In the shares, the biggest
+source in the full period is nuclear with 22%, followed by gas with
+about 20% and wind with about 19%. Because this only covers
+generation inside the country, imports and exports are not part of
+the picture.
+
+## Forecast tab
+
+The dataset includes the official forecast of the demand, published
+the day before by the grid operator, so I can measure how well it
+does. I defined the error as forecast minus actual, so a positive
+value means the forecast was too high. forecast_errors returns, hour
+by hour, that error in MW and the absolute error as a percentage of
+the real demand. It returns a table with the same date index, so the
+profile function I already had works on it without changes.
+
+The tab shows the forecast and the real demand on the same chart,
+the histogram of the hourly error, and the average absolute error by
+hour of the day. In the daily view the two lines are almost on top of
+each other, which says a lot about the forecast but makes the chart
+dull, so the interesting view is the hourly one on a range of one or
+two weeks. Overall the mean absolute error is about 317 MW, around
+1.1% of the demand, and the mean error is only 13.8 MW, so there is
+no relevant bias.
+
+The histogram is centred on zero and narrow, but it has a few
+isolated errors of several thousand MW, up to about 13,000 MW. I
+looked at them: only seven hours are above 4,000 MW out of 35,064,
+and together they add less than 2 MW to the mean absolute error of
+317 MW. Two of them are on 1 May 2015, a public holiday, where the
+forecast expected a normal working day and was about 4,500 MW too
+high, which is a real forecast miss. The other five look more like
+faulty readings of the real demand, for example 18,616 MW at 7pm on
+26 August 2015 when the forecast was 31,545 MW, but I cannot prove
+it, and I do not know which side of each pair is wrong, so I left
+all seven as they are instead of inventing a cleaning rule.
+
+By hour of the day, the error is lowest at night, about 0.8%
+between 3 and 6am, and highest in the late afternoon, about 1.4%
+around 5 and 6pm.
+
+I did not build this tab only to describe the forecast. When I build
+my own model to predict the price, the same idea applies, since the
+dataset also has the day-ahead price set by the market. That column
+will be the reference to beat, and the first thing to compare against
+will be simple rules like repeating the price of the day before.

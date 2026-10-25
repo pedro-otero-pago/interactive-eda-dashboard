@@ -18,12 +18,12 @@
     using the mean of the five cities as national weather.
 - `src/analysis.py` — date filtering, aggregation by
   hour/day/week/month in Madrid time, average profiles, binned
-  averages, and forecast error metrics.
+  averages, generation mix grouping, and forecast error metrics.
 - `src/app.py` — Streamlit app. Loads and caches the data, has
   sidebar filters for the date range and the granularity, shows KPI
-  cards, and has tabs with an interactive demand chart, the average
-  profiles by hour and by day of the week, and the relationship
-  between temperature and demand or price.
+  cards, and has five tabs: demand overview, average profiles by
+  hour and weekday, temperature vs demand or price, generation mix,
+  and the quality of the official demand forecast.
 
 ## Running the dashboard
 
