@@ -442,10 +442,9 @@ between 3 and 6am, and highest in the late afternoon, about 1.4%
 around 5 and 6pm.
 
 I did not build this tab only to describe the forecast. When I build
-my own model to predict the price, the same idea applies, since the
-dataset also has the day-ahead price set by the market. That column
-will be the reference to beat, and the first thing to compare against
-will be simple rules like repeating the price of the day before.
+my own model to predict the price, the same idea applies: it is only
+worth something if it beats a simple reference, like repeating the
+price of the day before.
 
 ## Price prediction: the feature table
 
@@ -470,10 +469,12 @@ prediction is made the day before, when the prices of the whole
 previous day are already known, which is a simplification of how the
 market really works.
 
-I left out several things on purpose. The day-ahead price column is
-the price that the market itself sets the day before for each hour,
-so using it as an input would be almost giving the model the answer.
-It is the reference I have to beat, not a variable. The real
+I left out several things on purpose. The dataset has a day-ahead
+price column that I first took to be the price the market sets 
+the day before, so using it as an input looked like giving the 
+model the answer. Later I found out that it is not that close to 
+the real price, as explained in the baselines section, so I am 
+not sure what it is, and I kept it out of the inputs. The real
 generation and the real demand of the same day are not known the day
 before either. The weather is a more subtle case: the dataset has
 the observed weather, not a forecast, so using the temperature of the
@@ -493,3 +494,41 @@ the same, so the price of an hour never leaks into its own variables
 or into earlier ones, and that 24 hours later the value does appear
 in the 24 hour lag, which proves that the information only travels
 forward in time.
+
+## Price prediction: baselines
+
+Before training anything I wanted to know how well simple rules that
+learn nothing can predict the price, because the model is only worth
+something if it beats them. The data is split by time and not at
+random: everything before 2018 is for training, which gives 26,136
+hours, and 2018 is for testing, which gives 8,760 hours. A random
+split would let the model see hours of the same day it is predicting,
+and the results would look much better than they really are. The
+split_by_year function in evaluation.py computes the year in Madrid
+time, so the cut falls exactly at the local new year. The test
+shows it with a small example that gives 47 hours of training and 49
+of testing, and not 48 and 48.
+
+I measure the error with two numbers. The MAE is the mean error in
+euros per MWh, easy to read. The RMSE squares the errors before
+averaging, so it punishes big mistakes more, and if it is much larger
+than the MAE it means there are a few large errors. The mean price in
+the test year is 63.44 euros per MWh. Repeating the price of the same
+hour of the day before gives an MAE of 5.21 and an RMSE of 7.70,
+which is about 8% of the mean price and is already a good reference
+because prices change little from one day to the next. Repeating the
+price of the same hour a week before is worse, 6.39 and 9.64. That
+is the bar the model has to beat.
+
+The third reference was the day-ahead price column of the dataset,
+and it gave 8.86 and 11.89, worse than repeating yesterday. I had
+assumed that this column was the price set by the market the day
+before and that it would be a very hard reference, so I looked at it
+more closely. Its mean is 49.87 against 57.88 for the real price, so
+it is 8 euros lower on average, and the correlation between both is
+only 0.73. The error against the real price also drops every year,
+from 12.25 in 2015 to 8.86 in 2018. If it were the clearing price of
+the day-ahead market, both series should be almost the same, so I do
+not know exactly what the column is, and I will not present it as
+the market forecast. I kept it as a third reference and I keep it
+out of the inputs of the model.

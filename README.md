@@ -27,6 +27,9 @@
 - `src/features.py` — builds the table of input variables for the
   price prediction model: past prices, forecasts published the day
   before, and calendar values, with no information from the future.
+- `src/evaluation.py` — chronological train/test split by year, error
+  metrics (MAE and RMSE), and the baseline predictions the model has
+  to beat.
 
 ## Running the dashboard
 
