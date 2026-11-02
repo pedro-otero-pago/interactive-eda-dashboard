@@ -532,3 +532,40 @@ the day-ahead market, both series should be almost the same, so I do
 not know exactly what the column is, and I will not present it as
 the market forecast. I kept it as a third reference and I keep it
 out of the inputs of the model.
+
+## Price prediction: first model
+
+The first model is a gradient boosting regressor from scikit-learn,
+in model.py. It builds hundreds of small decision trees, one after
+another, and each one tries to correct the errors of the previous
+ones. I chose it because it works well with a table like mine
+without scaling the variables, and because it is fast. It is trained
+with the hours before 2018 and tested on 2018, with the same MAE and
+RMSE as the baselines.
+
+One detail I paid attention to is early stopping. By default, when
+there are more than 10,000 rows, scikit-learn keeps a random 10% of
+the training data aside to decide when to stop adding trees. A random
+split is exactly what I avoided in the rest of the project, because
+it mixes hours that are next to each other in time, so I turned it
+off and fixed the number of trees to 300 with a learning rate of
+0.05. These values are reasonable starting points and I did not tune
+them, so the result is an honest first number and not the best the
+model can do.
+
+On 2018 the model gets an MAE of 4.68 euros per MWh and an RMSE of
+6.47, against 5.21 and 7.70 for repeating the price of the day
+before, the best of the simple references. That is 10% less mean
+error and 16% less RMSE. The RMSE improves more because the model
+makes fewer big mistakes, in the days when the price moves far from
+the price of yesterday. It is a modest improvement, and I would not
+claim more than that: it is one test year, I have no measure of how
+much the number changes with another year, and the model does not
+know about the price of gas and CO2, which drive the price, or about
+public holidays.
+
+The tests do not check the quality of the model, only that the
+pipeline works. One uses a fake model that predicts perfectly and
+checks that both errors are exactly zero, and the other trains the
+real one on a simple pattern, where the price is ten times the hour,
+and checks that the error is small.

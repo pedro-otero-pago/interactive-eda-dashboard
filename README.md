@@ -30,6 +30,8 @@
 - `src/evaluation.py` — chronological train/test split by year, error
   metrics (MAE and RMSE), and the baseline predictions the model has
   to beat.
+- `src/model.py` — trains the gradient boosting model that predicts
+  the hourly price from the features, and scores it on a test year.
 
 ## Running the dashboard
 
