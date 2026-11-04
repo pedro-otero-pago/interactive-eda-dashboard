@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from evaluation import baseline_scores, mae, rmse, split_by_year
+from evaluation import baseline_scores, mae, rmse, score_table, split_by_year
 
 
 def test_split_by_year_is_chronological_and_uses_local_years():
@@ -41,3 +41,18 @@ def test_baseline_scores_are_computed_for_each_prediction():
     assert scores.loc["Yesterday, same hour", "MAE"] == 0.0
     assert scores.loc["Last week, same hour", "MAE"] == pytest.approx(3.0)
     assert scores.loc["Market day-ahead price", "MAE"] == pytest.approx(1.0)
+
+def test_score_table_scores_every_prediction_against_actual():
+    results = pd.DataFrame(
+        {
+            "Actual": [10.0, 20.0],
+            "Good": [10.0, 20.0],
+            "Off": [12.0, 17.0],
+        }
+    )
+
+    table = score_table(results)
+
+    assert list(table.index) == ["Good", "Off"]
+    assert table.loc["Good", "MAE"] == 0.0
+    assert table.loc["Off", "MAE"] == pytest.approx(2.5)
