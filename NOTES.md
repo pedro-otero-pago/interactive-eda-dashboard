@@ -569,3 +569,45 @@ pipeline works. One uses a fake model that predicts perfectly and
 checks that both errors are exactly zero, and the other trains the
 real one on a simple pattern, where the price is ten times the hour,
 and checks that the error is small.
+
+## Prediction tab
+
+The last tab of the dashboard shows the model working. The user picks
+a week of 2018 and sees the hourly price in three lines: the real
+price, the prediction of the model and the price of the day before,
+the simple reference. Under the chart there is a table with the MAE
+and the RMSE of the three predictions over the whole of 2018, which
+are the same numbers I got from the script: 4.68 and 6.47 for the
+model, and 5.21 and 7.70 for repeating yesterday.
+
+The tab only lets the user choose weeks of 2018, on purpose. The
+model is trained with the years before 2018, so those are the only
+weeks it has never seen. If I allowed a week of 2016, the chart would
+show predictions of data the model learned from, and it would look
+much better than it really is. For the same reason the tab ignores
+the date range and the granularity of the sidebar and has its own
+selector.
+
+predict_test_year in model.py does the whole process in one call:
+it builds the table of variables, splits by year, trains the model
+and returns a table with the real price and the predictions of the
+model, of yesterday and of last week. A second function in
+evaluation.py, score_table, computes the two errors of each
+prediction against the real price. Training takes a few seconds, so
+the app does it once and keeps the result with st.cache_data. I
+first thought of st.cache_resource, which is for objects like a
+model, but what is saved is a table of results, so cache_data is the
+right one. The function that loads the predictions does not receive
+the data as an argument but loads it inside, so Streamlit does not
+have to calculate a signature of a table of 35,000 rows each time it
+decides whether to use the cache.
+
+The test of predict_test_year uses two years of artificial data and
+checks that the result only contains rows of 2018 and that the model
+learns a simple pattern. My first version of the test failed, and it
+was the test and not the code: the sample ended at 23:00 UTC on 31
+December 2018, which in Madrid is already 2019, so the split put one
+hour in the test set that belonged to the next year. It was a good
+confirmation that the cut uses the local calendar. I fixed it by
+starting the sample at 23:00 UTC of 31 December 2016, which is local
+midnight.

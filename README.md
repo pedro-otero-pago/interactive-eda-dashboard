@@ -21,17 +21,19 @@
   averages, generation mix grouping, and forecast error metrics.
 - `src/app.py` — Streamlit app. Loads and caches the data, has
   sidebar filters for the date range and the granularity, shows KPI
-  cards, and has five tabs: demand overview, average profiles by
-  hour and weekday, temperature vs demand or price, generation mix,
-  and the quality of the official demand forecast.
+  cards, and has six tabs: demand overview, average profiles by hour
+  and weekday, temperature vs demand or price, generation mix, the
+  quality of the official demand forecast, and the price prediction
+  model compared week by week with simple references.
 - `src/features.py` — builds the table of input variables for the
   price prediction model: past prices, forecasts published the day
   before, and calendar values, with no information from the future.
 - `src/evaluation.py` — chronological train/test split by year, error
-  metrics (MAE and RMSE), and the baseline predictions the model has
-  to beat.
+  metrics (MAE and RMSE), the baseline predictions the model has to
+  beat, and a score table for any set of predictions.
 - `src/model.py` — trains the gradient boosting model that predicts
-  the hourly price from the features, and scores it on a test year.
+  the hourly price from the features, scores it on a test year, and
+  produces the predictions shown in the dashboard.
 
 ## Running the dashboard
 
