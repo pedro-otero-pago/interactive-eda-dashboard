@@ -1,3 +1,4 @@
+import datetime
 import os
 
 import plotly.express as px
@@ -15,6 +16,8 @@ from analysis import (
     profile,
 )
 from data_processing import combine_datasets, load_energy, load_weather
+from evaluation import score_table
+from model import predict_test_year
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data")
 DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
@@ -27,6 +30,11 @@ def load_data():
     energy = load_energy(os.path.join(DATA_DIR, "energy_dataset.csv.gz"))
     weather = load_weather(os.path.join(DATA_DIR, "weather_features.csv.gz"))
     return combine_datasets(energy, weather)
+
+
+@st.cache_data
+def load_predictions():
+    return predict_test_year(load_data())
 
 
 st.set_page_config(page_title="Spain Energy Dashboard", layout="wide")
@@ -64,8 +72,15 @@ col2.metric("Average price", f"{hourly['price actual'].mean():.1f} €/MWh")
 col3.metric("Forecast error (MAPE)", f"{errors['mape']:.2f} %")
 col4.metric("Average temperature", f"{hourly['avg_temp'].mean():.1f} °C")
 
-overview_tab, patterns_tab, weather_tab, generation_tab, forecast_tab = st.tabs(
-    ["Overview", "Patterns", "Weather", "Generation", "Forecast"]
+(
+    overview_tab,
+    patterns_tab,
+    weather_tab,
+    generation_tab,
+    forecast_tab,
+    prediction_tab,
+) = st.tabs(
+    ["Overview", "Patterns", "Weather", "Generation", "Forecast", "Prediction"]
 )
 
 with overview_tab:
@@ -193,3 +208,34 @@ with forecast_tab:
         labels={"x": "Hour (Madrid time)", "y": "Absolute error (%)"},
     )
     right.plotly_chart(fig_error_hour)
+
+with prediction_tab:
+    results = load_predictions()
+    local_results = results.tz_convert(LOCAL_TZ)
+    first_day = local_results.index.min().date()
+    last_day = local_results.index.max().date()
+
+    st.caption(
+        "The model is trained with the years before 2018, so every week "
+        "shown here is data it has never seen."
+    )
+    week_start = st.date_input(
+        "Week starting on",
+        value=datetime.date(2018, 6, 4),
+        min_value=first_day,
+        max_value=last_day - datetime.timedelta(days=6),
+    )
+    week = filter_dates(
+        results, week_start, week_start + datetime.timedelta(days=6)
+    )
+
+    fig_prediction = px.line(
+        week,
+        y=["Actual", "Model", "Yesterday"],
+        title="Hourly price: actual vs model vs yesterday's price",
+        labels={"value": "Price (€/MWh)", "time": "Date", "variable": "Series"},
+    )
+    st.plotly_chart(fig_prediction)
+
+    st.subheader("Error over the whole of 2018")
+    st.dataframe(score_table(results).round(2))

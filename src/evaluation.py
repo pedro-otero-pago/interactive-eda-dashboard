@@ -28,3 +28,13 @@ def baseline_scores(X, y, market_price):
             for name, pred in predictions.items()
         }
     ).T
+
+def score_table(results):
+    actual = results["Actual"]
+    return pd.DataFrame(
+        {
+            name: {"MAE": mae(actual, results[name]), "RMSE": rmse(actual, results[name])}
+            for name in results.columns
+            if name != "Actual"
+        }
+    ).T
