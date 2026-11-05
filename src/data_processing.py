@@ -54,11 +54,27 @@ def load_weather(path):
 
     return df.set_index("time")
 
-def combine_datasets(energy, weather):
+
+CITY_WEIGHTS = {
+    "Madrid": 3266126,
+    "Barcelona": 1636762,
+    "Valencia": 794288,
+    "Seville": 693229,
+    "Bilbao": 334887,
+}
+
+
+def combine_datasets(energy, weather, weights=CITY_WEIGHTS):
     weather_cols = ["temp", "humidity", "wind_speed", "rain_1h", "clouds_all"]
 
+    city_weights = weather["city_name"].map(weights)
+    weighted = weather[weather_cols].mul(city_weights, axis=0)
+
     national_weather = (
-        weather.groupby(level="time")[weather_cols].mean().add_prefix("avg_")
+        weighted.groupby(level="time")
+        .sum()
+        .div(city_weights.groupby(level="time").sum(), axis=0)
+        .add_prefix("avg_")
     )
 
     return energy.join(national_weather, how="inner")
