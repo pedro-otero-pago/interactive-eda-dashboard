@@ -644,3 +644,47 @@ hand as (3 x 10 + 1 x 20) / 4. The third checks that the weights
 dictionary has exactly the five city names of the real data, because
 a typo such as Sevilla instead of Seville would leave that city
 without weight and fill the temperature with missing values.
+
+## Future improvements
+
+These are the things I left out on purpose, roughly in the order I
+would do them if I came back to the project.
+
+The first one is public holidays. The official demand forecast missed
+1 May 2015 by about 4,500 MW because it treated a holiday as a normal
+working day, and my price model has the same blind spot, since it only
+knows the hour, the weekday and the month. A calendar library would
+give me a holiday flag as a new input, and I could check on 2018
+whether the error on those days goes down.
+
+The second is the price of gas and CO2. The price in this market is
+set by the last plant that has to be switched on, which is often a gas
+plant, so those prices are probably the biggest thing the model does
+not see. The dataset does not include them, so I would need another
+source, and I would have to check that each value is known the day
+before, like the rest of the inputs.
+
+The third is the evaluation. I trained on 2015-2017 and tested on a
+single year, so I do not know how much the result depends on that one
+year. A fairer test would repeat the split with several test years
+(train on the years before each one) and report the spread of the
+error. I also did not tune the model, so the number of trees, the
+learning rate and the depth are still the starting values.
+
+Two smaller ideas are about the weather. The dataset only has observed
+weather, so I kept it out of the model because it would be like having
+a perfect forecast. With real weather forecasts, published the day
+before, it could become an input, although I saw in the Weather tab
+that the price depends very little on the temperature. And the
+population weights use the municipality of each city, when a city
+really represents a whole region, so regional weights would be a more
+faithful version.
+
+Three open questions about the data itself. I do not know what the
+day-ahead price column really is, since it is not the clearing price
+of the market as I first assumed. The seven hours with forecast errors
+above 4,000 MW are still in the data, and I could not tell which side
+of each pair is wrong. And the temperature explains less than 10% of
+the daily variation in demand, which looks low to me, so I would
+repeat the fit separately for weekdays and weekends to see if the
+weekly cycle is hiding the effect.
