@@ -15,7 +15,8 @@
     into gaps and interpolates them per city, and drops the unreliable
     pressure column.
   - `combine_datasets` merges both sources into one hourly table,
-    using the mean of the five cities as national weather.
+    using the population-weighted mean of the five cities as
+    national weather.
 - `src/analysis.py` — date filtering, aggregation by
   hour/day/week/month in Madrid time, average profiles, binned
   averages, generation mix grouping, and forecast error metrics.

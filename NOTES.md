@@ -153,11 +153,10 @@ is 0. A plain mean of angles is simply wrong, and doing it properly
 (averaging the sine and cosine components) would add complexity for
 a column I do not need to explain demand.
 
-The mean is not weighted. Madrid or Barcelona count exactly the same
-as Bilbao, even though they have far more population and electricity
-demand. Weighting each city by its population would give a more
-realistic national temperature. I decided to leave it as a future
-improvement and to come back to it before closing the project.
+The first version of this mean was not weighted: Madrid or Barcelona
+counted exactly the same as Bilbao, even though they have far more
+population and electricity demand. I left the weighting for the end
+of the project, and it is described in its own section below.
 
 The tests check the shape (35064, 25), that there are no missing
 values after the join, and, with a small hand-made example of two
@@ -288,10 +287,11 @@ by granularity. If they came from the grouped table, the average
 demand could change slightly when switching from hour to month,
 because of incomplete periods at the edges of the range. This way
 the four cards depend only on the date range, and the granularity
-only changes the chart. With the full range the app shows 28,698 MW
-of average demand, 57.9 euros per MWh, a forecast error of 1.10% and
-16.6 degrees of average temperature, which match the numbers I got
-while exploring the data.
+only changes the chart. With the full range the app shows 28,698 MW 
+of average demand, 57.9 euros per MWh, a forecast error of 1.10% 
+and 16.2 degrees of average temperature (weighted by population, 
+see the section on weighting). The first three match the numbers I 
+got while exploring the data.
 
 The chart is interactive without extra code: hovering shows the
 exact value, dragging zooms in and a double click resets it. The
@@ -343,7 +343,7 @@ itself is already covered by the profile tests.
 
 The Weather tab compares the average temperature with the demand or
 the price, chosen with a radio button. Earlier I had seen that the
-linear correlation between temperature and demand was only 0.21, but
+linear correlation between temperature and demand was only 0.19, but
 I expected a real relationship in the shape of a U: heating makes the
 demand go up when it is cold, and air conditioning makes it go up
 when it is hot. A straight line cannot describe that, so the chart
@@ -364,20 +364,21 @@ the centre of each bin and not at its lower edge, otherwise the
 whole curve would look shifted half a bin to the left.
 
 The U shape is clear for the demand. The average goes down to about
-27,400 MW around 17 degrees and goes up to 30,000 MW or more with
-both cold and heat. The cloud of points is very wide, from 22,000
-to 35,000 MW at the same temperature, because the temperature is
-only one of the factors, and the day of the week and the season
-matter too. The bins at the extremes have few days, so the line is
-noisy there. The price shows a much weaker relationship, with a
-minimum of about 52 euros per MWh between 13 and 15 degrees and
-higher prices in the coldest days. I would not read much more into
-it, since the price depends more on gas and renewables.
+27,100 MW around 17 degrees, and goes up to about 30,000 MW at 5
+degrees and to about 31,000 MW at 29 degrees. The cloud of points is
+very wide, from 22,000 to 35,000 MW at the same temperature, because
+the temperature is only one of the factors, and the day of the week
+and the season matter too. The bins at the extremes have few days,
+so the line is noisy there: the last bin on the hot side drops back
+down because of that. The price shows a much weaker relationship,
+with a minimum of about 49 euros per MWh around 13 degrees and higher
+prices, about 65 euros per MWh or more, in the coldest days. I would
+not read much more into it, since the price depends more on gas and
+renewables.
 
-The temperature used here is the unweighted mean of the five
-cities, the improvement I left for the end of the project. The tab
-would be a good place to see its effect, since a population-weighted
-temperature should fit the demand a little better.
+The temperature used here is the population-weighted mean of the
+five cities (see the section on weighting). As measured there, it
+fits the demand only slightly better than the plain mean.
 
 ## Generation tab
 
@@ -611,3 +612,35 @@ hour in the test set that belonged to the next year. It was a good
 confirmation that the cut uses the local calendar. I fixed it by
 starting the sample at 23:00 UTC of 31 December 2016, which is local
 midnight.
+
+## Weighting the cities by population
+
+Until now the national weather was the plain mean of the five cities,
+which treats Bilbao as if it mattered as much as Madrid. Electricity
+is consumed where people live, so I changed combine_datasets to a
+weighted mean that uses the municipal population of each city as its
+weight. I took the INE figures for 1 January 2019, which are a close
+proxy for 2015-2018 because only the proportions matter. Madrid ends
+up with about 49% of the weight and Bilbao with 5%.
+
+The weights are a simplification. Each city really stands for a whole
+region (Seville for Andalusia, Barcelona for Catalonia), so regional
+population would give other proportions. The columns keep the avg_
+prefix so that the app does not change, but they are now weighted
+means.
+
+I expected the weighted temperature to fit the demand a bit better,
+so I measured it instead of assuming it. I fitted a quadratic curve
+(the U shape) to daily demand against daily temperature with both
+versions. R2 goes from 0.078 to 0.082, so the improvement is real but
+very small, and the mean temperature goes from 16.56 to 16.23 degrees.
+In both cases temperature alone explains less than 10% of the daily
+variation in demand, which I want to look into later.
+
+The tests replace the old averaging test with three. With equal
+weights the result is the plain mean, so 10 and 20 give 15. With
+weights 3 and 1 the same values give 12.5, which I worked out by
+hand as (3 x 10 + 1 x 20) / 4. The third checks that the weights
+dictionary has exactly the five city names of the real data, because
+a typo such as Sevilla instead of Seville would leave that city
+without weight and fill the temperature with missing values.
