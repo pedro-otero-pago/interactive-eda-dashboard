@@ -2,7 +2,7 @@ import os
 
 import pandas as pd
 import pytest
-from data_processing import combine_datasets, load_energy, load_weather
+from data_processing import CITY_WEIGHTS, combine_datasets, load_energy, load_weather
 
 DATA_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "data", "energy_dataset.csv.gz")
 WEATHER_PATH = os.path.join(os.path.dirname(__file__), "..", "..", "data", "weather_features.csv.gz")
@@ -118,7 +118,7 @@ def test_combine_has_no_missing_values(df, weather):
     assert combined.isna().sum().sum() == 0
 
 
-def test_combine_averages_the_cities_for_each_hour():
+def make_two_city_data():
     index = pd.date_range("2015-01-01", periods=2, freq="h", tz="UTC", name="time")
     energy = pd.DataFrame({"load": [1.0, 2.0]}, index=index)
     weather = pd.DataFrame(
@@ -132,11 +132,30 @@ def test_combine_averages_the_cities_for_each_hour():
         },
         index=index.repeat(2),
     )
+    return energy, weather
 
-    result = combine_datasets(energy, weather)
+
+def test_combine_with_equal_weights_is_the_plain_mean():
+    energy, weather = make_two_city_data()
+
+    result = combine_datasets(energy, weather, weights={"Madrid": 1, "Bilbao": 1})
 
     assert result["avg_temp"].tolist() == [15.0, 35.0]
     assert result["avg_clouds_all"].tolist() == [10.0, 50.0]
+
+
+def test_combine_weights_each_city_by_its_weight():
+    energy, weather = make_two_city_data()
+
+    result = combine_datasets(energy, weather, weights={"Madrid": 3, "Bilbao": 1})
+
+    assert result["avg_temp"].tolist() == [12.5, 32.5]
+    assert result["avg_clouds_all"].tolist() == [5.0, 45.0]
+
+
+def test_city_weights_cover_the_real_cities(weather):
+    assert set(CITY_WEIGHTS) == set(weather["city_name"])
+
 
 def test_load_energy_treats_nuclear_zero_as_missing(tmp_path):
     path = tmp_path / "energy.csv"
